@@ -9,7 +9,7 @@ local inspect = require "inspect"
 
 local API_VERSION = "1.0"
 local API_PACKAGE_CONFIG = 'http://localhost:8888/api/v1/package-config.json'
-local SD_CARD_DIR = '/tmp'
+local SD_CARD_DIR = '/tmp/data'
 local APK_CACHE_DIR = SD_CARD_DIR .. '/apk_cache'
 local IPA_CACHE_DIR = SD_CARD_DIR .. '/ipa_cache'
 local TPM_IPA_DIR = SD_CARD_DIR .. '/tpm_ipa'
@@ -147,6 +147,7 @@ local function remove_cache_dir(platform)
     os.execute(cmd)
 end
 
+
 local function make_all_dir()
     local cmd = "mkdir -p " .. IPA_CACHE_DIR
     os.execute(cmd)
@@ -173,6 +174,7 @@ local function update_pkg(package, platform)
 
     print(string.format("%s status: %s", platform, tostring(check_all_pkg(package, platform))))
 end
+
 
 local function run()
     make_all_dir()
