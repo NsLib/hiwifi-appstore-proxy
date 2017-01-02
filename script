@@ -1,0 +1,30 @@
+script_running='/tmp/t.lock'
+
+start() {
+    touch $script_running
+    return 0
+}
+
+stop() {
+    rm $script_running
+    return 0
+}
+
+status() {
+    local cur_date=`date "+%Y-%m-%d %H:%M:%S"`
+    if [ -e $script_running ]; then
+        echo '{ "status" : "running",  "msg": "Router Time: '$cur_date'"}'
+    else
+        echo '{ "status" : "stopped",  "msg": "Router Time: '$cur_date'"}'
+    fi
+}
+
+install() {
+    start
+    return 0
+}
+
+uninstall() {
+    stop
+    return 0
+}
