@@ -20,11 +20,35 @@ status() {
 }
 
 install() {
+    cp -p vh.android.conf /etc/nginx
+    cp -p vh.phobos.apple.com.conf /etc/nginx
+
+    chomd 644 /etc/nginx/vh.android.conf
+    chomd 644 /etc/nginx/vh.phobos.apple.com.conf
+
+
+    /usr/sbin/nginx -t || {
+        rm -f /etc/nginx/vh.android.conf
+        rm -f /etc/nginx/vh.phobos.apple.com.conf
+        return  500
+    }
+
+    if [ "$(cat /etc/nginx/mode 2>/dev/null)" == "hiwifi" ] ; then
+        /etc/init.d/nginx reload
+    else
+        echo "hiwifi" > /etc/nginx/mode
+        /etc/init.d/nginx restart
+    fi
+
     start
     return 0
 }
 
 uninstall() {
+    rm -f /etc/nginx/vh.android.conf
+    rm -f /etc/nginx/vh.phobos.apple.com.conf
+
+    /etc/init.d/nginx reload
     stop
     return 0
 }
