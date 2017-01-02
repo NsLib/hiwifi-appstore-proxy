@@ -9,25 +9,17 @@ local inspect = require "inspect"
 
 local API_VERSION = "1.0"
 local API_PACKAGE_CONFIG = 'http://localhost:8888/api/v1/package-config.json'
-local LOCK_FILE = '/tmp/ns-agent.lock'
 local SD_CARD_DIR = '/tmp'
-local PKG_CACHE_DIR = SD_CARD_DIR .. '/ipa_cache'
-local PKG_META_DIR = SD_CARD_DIR .. '/ipa_meta'
-local TPM_PKG_DIR = SD_CARD_DIR .. '/tpm_ipa'
-local TPM_PKG_NAME = "tpm.ipa"
+local APK_CACHE_DIR = SD_CARD_DIR .. '/apk_cache'
+local IPA_CACHE_DIR = SD_CARD_DIR .. '/ipa_cache'
+local TPM_IPA_DIR = SD_CARD_DIR .. '/tpm_ipa'
+local TPM_APK_DIR = SD_CARD_DIR .. '/tpm_apk'
+local TPM_IPA_NAME = "tpm.ipa"
+local TPM_APK_NAME = "tpm.apk"
 local DELIMITER = "/"
+local PLATFORM_IOS = "ios"
+local PLATFORM_ANDROID = "android"
 
-local function catch(what)
-    return what[1]
-end
-
-local function try(what)
-    status, result = pcall(what[1])
-    if not status then
-        what[2](result)
-    end
-    return result
-end
 
 local function calc_md5sum(filename)
     local file, err = io.open(filename, "rb")
@@ -53,26 +45,15 @@ function is_file_exists(name)
 end
 
 
-local function startswith(str, substr)  
-    if str == nil or substr == nil then  
-        return nil, "the string or the sub-stirng parameter is nil"  
-    end  
-    if string.find(str, substr) ~= 1 then  
-        return false  
-    else  
-        return true  
-    end  
-end
-
-
-local function try_lock_file()
-    -- 使用flock
-    return true
-end
-
-
-local function unlock_file()
-    -- 使用flock
+local function startswith(str, substr)
+    if str == nil or substr == nil then
+        return nil, "the string or the sub-stirng parameter is nil"
+    end
+    if string.find(str, substr) ~= 1 then
+        return false
+    else
+        return true
+    end
 end
 
 
@@ -87,8 +68,19 @@ local function get_package_config()
 end
 
 
+local function get_cache_dir(platform)
+    if platform == PLATFORM_ANDROID then
+        return APK_CACHE_DIR
+    elseif platform == PLATFORM_IOS then
+        return IPA_CACHE_DIR
+    else
+        error(string.format("Invalid platform: %s", platform))
+    end
+end
+
+
 -- 包都匹配返回true, 否则返回false
-local function check_all_pkg(packages)
+local function check_all_pkg(packages, platform)
     -- NOTE: 因为是move过去的, 所以认为一定成功, 不再校验md5
     local all_exist = true
     for i=1, #packages do
@@ -97,7 +89,7 @@ local function check_all_pkg(packages)
         if not startswith(path, "/") then
             delimiter = DELIMITER
         end
-        path = PKG_CACHE_DIR .. delimiter .. path
+        path = get_cache_dir(platform) .. delimiter .. path
          -- print(path)
         if not is_file_exists(path) then
             all_exist = false
@@ -107,13 +99,19 @@ local function check_all_pkg(packages)
 end
 
 
-local function get_tpm_pkg_name()
-    return TPM_PKG_DIR .. DELIMITER .. TPM_PKG_NAME
+local function get_tmp_pkg_name(platform)
+    if platform == PLATFORM_ANDROID then
+        return TPM_APK_DIR .. DELIMITER .. TPM_APK_NAME
+    elseif platform == PLATFORM_IOS then
+        return TPM_IPA_DIR .. DELIMITER .. TPM_IPA_NAME
+    else
+        error(string.format("Invalid platform: %s", platform))
+    end
 end
 
 
-local function download_pkg(package)
-    local tmp_pkg_name = get_tpm_pkg_name()
+local function download_pkg(package, platform)
+    local tmp_pkg_name = get_tmp_pkg_name(platform)
 
     local cmd = "rm -f " .. tmp_pkg_name
     os.execute(cmd)
@@ -128,66 +126,70 @@ local function download_pkg(package)
 end
 
 
-local function move_pkg_to_cache_dir(package)
-    local path = PKG_CACHE_DIR .. string.match(package["path"], "(.+)/[^/]*%.%w+$")
+local function move_pkg_to_cache_dir(package, platform)
+    local delimiter = ''
+    local path = package["path"]
+    if not startswith(path, "/") then
+        delimiter = DELIMITER
+    end
+    path = get_cache_dir(platform) .. delimiter .. path
+
     local cmd = "mkdir -p " .. path
     os.execute(cmd)
-    cmd = string.format("mv -f %s %s%s", get_tpm_pkg_name(), PKG_CACHE_DIR, package["path"])
-    print(cmd)
+    cmd = string.format("mv -f %s %s%s", get_tmp_pkg_name(platform), get_cache_dir(platform), package["path"])
+    -- print(cmd)
     os.execute(cmd)
 end
 
 
-local function remove_pkg_cache_dir()
-    local cmd = "rm -rf " .. PKG_CACHE_DIR .. "/*"
-    print(cmd)
+local function remove_cache_dir(platform)
+    local cmd = string.format("rm -rf %s/*", get_cache_dir(platform))
     os.execute(cmd)
 end
-
 
 local function make_all_dir()
-    local cmd = "mkdir -p " .. PKG_CACHE_DIR
+    local cmd = "mkdir -p " .. IPA_CACHE_DIR
     os.execute(cmd)
-    cmd = "mkdir -p " .. TPM_PKG_DIR
+    cmd = "mkdir -p " .. TPM_IPA_DIR
+    os.execute(cmd)
+    cmd = "mkdir -p " .. APK_CACHE_DIR
+    os.execute(cmd)
+    cmd = "mkdir -p " .. TPM_APK_DIR
     os.execute(cmd)
 end
+
+
+local function update_pkg(package, platform)
+    if not check_all_pkg(package, platform) then
+        remove_cache_dir(platform)
+        make_all_dir()
+
+        for i=1, #package do
+            local pkg = package[i]
+            download_pkg(pkg, platform)
+            move_pkg_to_cache_dir(pkg, platform)
+        end
+    end
+
+    print(string.format("%s status: %s", platform, tostring(check_all_pkg(package, platform))))
+end
+
+local function run()
+    make_all_dir()
+
+    local config = get_package_config()
+
+    if config["version"] ~= API_VERSION then
+        error("API version does't match")
+    end
+
+    -- TODO: check schema
+
+    update_pkg(config["iosPackages"], PLATFORM_IOS)
+    update_pkg(config["androidPackages"], PLATFORM_ANDROID)
+end
+
 
 -----------------------------------
 
-if not try_lock_file() then
-    os.exit()
-end
-
-try {
-    function()
-        make_all_dir()
-
-        local config = get_package_config()
-
-        if config["version"] ~= API_VERSION then
-            error("API version does't match")
-        end
-
-        -- TODO: check schema
-        if not check_all_pkg(config["packages"]) then
-            remove_pkg_cache_dir()
-            make_all_dir()
-
-            for i=1, #config["packages"] do
-                local pkg = config["packages"][i]
-                download_pkg(pkg)
-                move_pkg_to_cache_dir(pkg)
-            end
-        end
-
-        print("status: " .. tostring(check_all_pkg(config["packages"])))
-
-        unlock_file()
-    end,
-    catch {
-        function(err)
-            print('caught error: ' .. err)
-            unlock_file()
-        end
-    }
-}
+run()

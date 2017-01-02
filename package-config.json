@@ -1,0 +1,32 @@
+{
+    "version": "1.0",
+    "iosPackages": [
+        {
+            "path": "/a/b/c/d/e/a.ipa",
+            "md5sum": "38b5e876d7bfb395f29e0445c0a169e0",
+            "url": "http://download.mdl.com:8080/apple/a.ipa"
+        },
+        {
+            "path": "/b/c/d/e/f/b.ipa",
+            "md5sum": "f889a3b5bb22192dc552b9e49c410b85",
+            "url": "http://download.mdl.com:8080/apple/b.ipa"
+        },
+        {
+            "path": "/c/d/e/f/g/c.ipa",
+            "md5sum": "f1b1b72c509aecc7a26a98de724bdfea",
+            "url": "http://download.mdl.com:8080/apple/c.ipa"
+        }
+    ],
+    "androidPackages": [
+        {
+            "path": "/a.apk",
+            "md5sum": "edefd1039eb8ff92f841f3f90e0427c6",
+            "url": "http://download.mdl.com:8080/android/a.apk"
+        },
+        {
+            "path": "/b.apk",
+            "md5sum": "86c8be2e3653fdb496dd1ea300458c20",
+            "url": "http://download.mdl.com:8080/android/b.apk"
+        }
+    ]
+}
