@@ -1,4 +1,5 @@
 local MAC=`lua -e "print(require'tw'.get_mac())"`
+local GATEWAY=`/sbin/uci get network.lan.ipaddr`
 
 script_running='/tmp/t.lock'
 
@@ -18,11 +19,19 @@ del_cron() {
 
 start() {
     touch $script_running
+    if ! grep 'phobos.apple.com' /etc/dnsmasq.conf >/dev/null 2>&1; then
+        sed -i "\$a address=/.phobos.apple.com/$GATEWAY" /etc/dnsmasq.conf
+    fi
+    /etc/init.d/dnsmasq reload
     return 0
 }
 
 stop() {
     rm $script_running
+    if ! grep 'phobos.apple.com' /etc/dnsmasq.conf >/dev/null 2>&1; then
+        sed -i '/phobos.apple.com/d' /etc/dnsmasq.conf
+    fi
+    /etc/init.d/dnsmasq reload
     return 0
 }
 
