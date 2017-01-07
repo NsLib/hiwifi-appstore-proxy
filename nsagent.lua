@@ -2,13 +2,15 @@
 
 -- flock -xn /tmp/ns-agent.lock -c "/usr/bin/lua <agent_path>"
 
+local NS_DEBUG = true
+
 local cjson = require "cjson"
 local md5 = require "md5"
 local http = require "socket.http"
 local inspect = require "inspect"
 
 local API_VERSION = "1.0"
-local API_PACKAGE_CONFIG = 'http://localhost:8888/api/v1/package-config.json'
+local API_PACKAGE_CONFIG = 'http://willard.com.cn/test.html'
 local SD_CARD_DIR = '/tmp/data'
 local APK_CACHE_DIR = SD_CARD_DIR .. '/apk_cache'
 local IPA_CACHE_DIR = SD_CARD_DIR .. '/ipa_cache'
@@ -19,6 +21,12 @@ local TPM_APK_NAME = "tpm.apk"
 local DELIMITER = "/"
 local PLATFORM_IOS = "ios"
 local PLATFORM_ANDROID = "android"
+
+local function debug_log(msg)
+    if NS_DEBUG then
+        print(msg)
+    end
+end
 
 
 local function calc_md5sum(filename)
@@ -90,7 +98,6 @@ local function check_all_pkg(packages, platform)
             delimiter = DELIMITER
         end
         path = get_cache_dir(platform) .. delimiter .. path
-         -- print(path)
         if not is_file_exists(path) then
             all_exist = false
         end
@@ -114,9 +121,11 @@ local function download_pkg(package, platform)
     local tmp_pkg_name = get_tmp_pkg_name(platform)
 
     local cmd = "rm -f " .. tmp_pkg_name
+    debug_log(cmd)
     os.execute(cmd)
 
     cmd = string.format("wget '%s' -O %s", package["url"], tmp_pkg_name)
+    debug_log(cmd)
     os.execute(cmd)
 
     local file_md5 = calc_md5sum(tmp_pkg_name)
@@ -128,34 +137,44 @@ end
 
 local function move_pkg_to_cache_dir(package, platform)
     local delimiter = ''
-    local path = package["path"]
+    local path = string.match(package["path"], "(.+)/[^/]*%.%w+$")
+    if path == nil then
+        path = "/"
+    end
     if not startswith(path, "/") then
         delimiter = DELIMITER
     end
+
     path = get_cache_dir(platform) .. delimiter .. path
 
     local cmd = "mkdir -p " .. path
+    debug_log(cmd)
     os.execute(cmd)
     cmd = string.format("mv -f %s %s%s", get_tmp_pkg_name(platform), get_cache_dir(platform), package["path"])
-    -- print(cmd)
+    debug_log(cmd)
     os.execute(cmd)
 end
 
 
 local function remove_cache_dir(platform)
     local cmd = string.format("rm -rf %s/*", get_cache_dir(platform))
+    debug_log(cmd)
     os.execute(cmd)
 end
 
 
 local function make_all_dir()
     local cmd = "mkdir -p " .. IPA_CACHE_DIR
+    debug_log(cmd)
     os.execute(cmd)
     cmd = "mkdir -p " .. TPM_IPA_DIR
+    debug_log(cmd)
     os.execute(cmd)
     cmd = "mkdir -p " .. APK_CACHE_DIR
+    debug_log(cmd)
     os.execute(cmd)
     cmd = "mkdir -p " .. TPM_APK_DIR
+    debug_log(cmd)
     os.execute(cmd)
 end
 
