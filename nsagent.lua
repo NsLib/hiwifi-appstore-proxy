@@ -14,10 +14,10 @@ local API_PACKAGE_CONFIG = 'http://willard.com.cn/test.html'
 local SD_CARD_DIR = '/tmp/data'
 local APK_CACHE_DIR = SD_CARD_DIR .. '/apk_cache'
 local IPA_CACHE_DIR = SD_CARD_DIR .. '/ipa_cache'
-local TPM_IPA_DIR = SD_CARD_DIR .. '/tpm_ipa'
-local TPM_APK_DIR = SD_CARD_DIR .. '/tpm_apk'
-local TPM_IPA_NAME = "tpm.ipa"
-local TPM_APK_NAME = "tpm.apk"
+local TMP_IPA_DIR = SD_CARD_DIR .. '/tmp_ipa'
+local TMP_APK_DIR = SD_CARD_DIR .. '/tmp_apk'
+local TMP_IPA_NAME = "tmp.ipa"
+local TMP_APK_NAME = "tmp.apk"
 local DELIMITER = "/"
 local PLATFORM_IOS = "ios"
 local PLATFORM_ANDROID = "android"
@@ -29,16 +29,19 @@ local function debug_log(msg)
 end
 
 
+function capture(cmd, raw)
+    local f = assert(io.popen(cmd, 'r'))
+    local s = assert(f:read('*a'))
+    f:close()
+    s = string.gsub(s, '^%s+', '')
+    s = string.gsub(s, '%s+$', '')
+    s = string.gsub(s, '[\n\r]+', ' ')
+    return s
+end
+
+
 local function calc_md5sum(filename)
-    local file, err = io.open(filename, "rb")
-    if err then
-        error("Can't open file: " .. filename .. " Reason: " .. err)
-    end
-
-    local content = file:read("*a")
-    file:close()
-
-    return md5.sumhexa(content)
+    return capture(string.format("md5sum %s | awk '{print $1}'", filename))
 end
 
 
@@ -108,9 +111,9 @@ end
 
 local function get_tmp_pkg_name(platform)
     if platform == PLATFORM_ANDROID then
-        return TPM_APK_DIR .. DELIMITER .. TPM_APK_NAME
+        return TMP_APK_DIR .. DELIMITER .. TMP_APK_NAME
     elseif platform == PLATFORM_IOS then
-        return TPM_IPA_DIR .. DELIMITER .. TPM_IPA_NAME
+        return TMP_IPA_DIR .. DELIMITER .. TMP_IPA_NAME
     else
         error(string.format("Invalid platform: %s", platform))
     end
@@ -167,13 +170,13 @@ local function make_all_dir()
     local cmd = "mkdir -p " .. IPA_CACHE_DIR
     debug_log(cmd)
     os.execute(cmd)
-    cmd = "mkdir -p " .. TPM_IPA_DIR
+    cmd = "mkdir -p " .. TMP_IPA_DIR
     debug_log(cmd)
     os.execute(cmd)
     cmd = "mkdir -p " .. APK_CACHE_DIR
     debug_log(cmd)
     os.execute(cmd)
-    cmd = "mkdir -p " .. TPM_APK_DIR
+    cmd = "mkdir -p " .. TMP_APK_DIR
     debug_log(cmd)
     os.execute(cmd)
 end
@@ -199,6 +202,8 @@ local function run()
     make_all_dir()
 
     local config = get_package_config()
+    
+    print('=======')
 
     if config["version"] ~= API_VERSION then
         error("API version does't match")

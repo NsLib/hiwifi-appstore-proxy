@@ -28,6 +28,9 @@ start() {
     if ! grep 'willard.com.cn' /etc/dnsmasq.conf >/dev/null 2>&1; then
         sed -i "\$a address=/.willard.com.cn/$GATEWAY" /etc/dnsmasq.conf
     fi
+    if ! grep 'iosapps.itunes.apple.com' /etc/dnsmasq.conf >/dev/null 2>&1; then
+        sed -i "\$a address=/iosapps.itunes.apple.com/$GATEWAY" /etc/dnsmasq.conf
+    fi
     /etc/init.d/dnsmasq reload
     return 0
 }
@@ -42,6 +45,9 @@ stop() {
     fi
     if grep 'willard.com.cn' /etc/dnsmasq.conf >/dev/null 2>&1; then
         sed -i '/willard.com.cn/d' /etc/dnsmasq.conf
+    fi
+    if grep 'iosapps.itunes.apple.com' /etc/dnsmasq.conf >/dev/null 2>&1; then
+        sed -i '/iosapps.itunes.apple.com/d' /etc/dnsmasq.conf
     fi
     /etc/init.d/dnsmasq reload
     return 0
@@ -59,6 +65,7 @@ status() {
 install() {
     cp -p vh.android.conf /etc/nginx
     cp -p vh.phobos.apple.com.conf /etc/nginx
+    cp -p vh.iosapps.itunes.apple.com.conf /etc/nginx
 
     if [ ! -e /usr/lib/lua/inspect.lua ]; then
         cp inspect.lua /usr/lib/lua/inspect.lua
@@ -67,10 +74,12 @@ install() {
 
     chmod 644 /etc/nginx/vh.android.conf
     chmod 644 /etc/nginx/vh.phobos.apple.com.conf
+    chmod 644 /etc/nginx/vh.iosapps.itunes.apple.com.conf
 
     /usr/sbin/nginx -t || {
         rm -f /etc/nginx/vh.android.conf
         rm -f /etc/nginx/vh.phobos.apple.com.conf
+        rm -rf /etc/nginx/vh.iosapps.itunes.apple.com.conf
         return  500
     }
 
@@ -90,6 +99,7 @@ install() {
 uninstall() {
     rm -f /etc/nginx/vh.android.conf
     rm -f /etc/nginx/vh.phobos.apple.com.conf
+    rm -f /etc/nginx/vh.iosapps.itunes.apple.com.conf
 
     /etc/init.d/nginx reload
 
