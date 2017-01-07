@@ -19,14 +19,9 @@
     ],
     "androidPackages": [
         {
-            "path": "/a.apk",
-            "md5sum": "edefd1039eb8ff92f841f3f90e0427c6",
-            "url": "http://download.mdl.com:8080/android/a.apk"
-        },
-        {
-            "path": "/b.apk",
-            "md5sum": "86c8be2e3653fdb496dd1ea300458c20",
-            "url": "http://download.mdl.com:8080/android/b.apk"
+            "path": "/app_download/blibee-app-androidv1.apk",
+            "md5sum": "9bbac8a4d5c5982398112e6c8b0a9978",
+            "url": "https://mobile-static.bianlifeng.com/app_download/blibee-app-androidv1.apk"
         }
     ]
 }

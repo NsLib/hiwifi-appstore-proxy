@@ -22,14 +22,20 @@ start() {
     if ! grep 'phobos.apple.com' /etc/dnsmasq.conf >/dev/null 2>&1; then
         sed -i "\$a address=/.phobos.apple.com/$GATEWAY" /etc/dnsmasq.conf
     fi
+    if ! grep 'mobile-static.bianlifeng.com' /etc/dnsmasq.conf >/dev/null 2>&1; then
+        sed -i "\$a address=/.mobile-static.bianlifeng.com/$GATEWAY" /etc/dnsmasq.conf
+    fi
     /etc/init.d/dnsmasq reload
     return 0
 }
 
 stop() {
     rm $script_running
-    if ! grep 'phobos.apple.com' /etc/dnsmasq.conf >/dev/null 2>&1; then
+    if grep 'phobos.apple.com' /etc/dnsmasq.conf >/dev/null 2>&1; then
         sed -i '/phobos.apple.com/d' /etc/dnsmasq.conf
+    fi
+    if grep 'mobile-static.bianlifeng.com' /etc/dnsmasq.conf >/dev/null 2>&1; then
+        sed -i '/mobile-static.bianlifeng.com/d' /etc/dnsmasq.conf
     fi
     /etc/init.d/dnsmasq reload
     return 0
