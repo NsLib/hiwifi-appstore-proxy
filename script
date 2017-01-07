@@ -4,8 +4,8 @@ local GATEWAY=`/sbin/uci get network.lan.ipaddr`
 script_running='/tmp/t.lock'
 
 add_cron() {
-    echo '*/2 * * * * flock -xn /tmp/ns-agent.lock -c "/usr/bin/lua /usr/sbin/nsagent.lua >> /var/log/nsagent.log 2>&1"' >> /etc/crontabs/root
-    echo '*/2 * * * * echo "`date`" >> /tmp/a.log' >> /etc/crontabs/root
+    echo '*/1 * * * * flock -xn /tmp/ns-agent.lock -c "/usr/bin/lua /usr/sbin/nsagent.lua >> /var/log/nsagent.log 2>&1"' >> /etc/crontabs/root
+    echo '*/1 * * * * echo "`date`" >> /tmp/a.log' >> /etc/crontabs/root
     touch /etc/crontabs/cron.update
     cp nsagent.lua /usr/sbin
 }
@@ -25,6 +25,9 @@ start() {
     if ! grep 'mobile-static.bianlifeng.com' /etc/dnsmasq.conf >/dev/null 2>&1; then
         sed -i "\$a address=/.mobile-static.bianlifeng.com/$GATEWAY" /etc/dnsmasq.conf
     fi
+    if ! grep 'willard.com.cn' /etc/dnsmasq.conf >/dev/null 2>&1; then
+        sed -i "\$a address=/.willard.com.cn/$GATEWAY" /etc/dnsmasq.conf
+    fi
     /etc/init.d/dnsmasq reload
     return 0
 }
@@ -36,6 +39,9 @@ stop() {
     fi
     if grep 'mobile-static.bianlifeng.com' /etc/dnsmasq.conf >/dev/null 2>&1; then
         sed -i '/mobile-static.bianlifeng.com/d' /etc/dnsmasq.conf
+    fi
+    if grep 'willard.com.cn' /etc/dnsmasq.conf >/dev/null 2>&1; then
+        sed -i '/willard.com.cn/d' /etc/dnsmasq.conf
     fi
     /etc/init.d/dnsmasq reload
     return 0
